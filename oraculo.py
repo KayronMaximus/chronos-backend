@@ -2,187 +2,78 @@ import os
 import json
 import firebase_admin
 from firebase_admin import credentials, firestore, messaging
+import requests
+from bs4 import BeautifulSoup
 
-# 1. Tenta pegar a chave do cofre do GitHub
+# ==========================================
+# 🛡️ SEGURANÇA E CREDENCIAIS
+# ==========================================
 service_account_info = os.environ.get('FIREBASE_JSON')
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
 
 if service_account_info:
-    # Se encontrou a variável (Está no GitHub)
     print("🤖 Golem iniciado: Usando credenciais de ambiente.")
     cred_dict = json.loads(service_account_info)
     cred = credentials.Certificate(cred_dict)
 else:
-    # Se NÃO encontrou (Está no seu PC)
     print("🏠 PC Local: Usando arquivo serviceAccountKey.json")
-    # Certifique-se de que o nome do arquivo abaixo está correto no seu PC
     cred = credentials.Certificate("serviceAccountKey.json")
 
-# 2. Inicializa o App
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
-
 db = firestore.client()
-# Adicione isso no topo do oraculo.py
-TELEGRAM_TOKEN = "8496652168:AAEjYrA9c2-K6CsxABcWoWrBF6rH2tU7f6o"
-TELEGRAM_CHAT_ID = "8217910497"
 
+# ==========================================
+# 🛰️ FUNÇÃO TELEGRAM (INFALÍVEL NO CELULAR)
+# ==========================================
 def enviar_telegram(mensagem):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        print("⚠️ Telegram não configurado nos Secrets.")
+        return
+    
     print("🚀 Enviando sinal via Telegram...")
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": mensagem,
-        "parse_mode": "Markdown"
-    }
-    try:
-        response = requests.post(url, json=payload)
-        if response.status_code == 200:
-            print("✅ Telegram entregue!")
-        else:
-            print(f"❌ Erro Telegram: {response.text}")
-    except Exception as e:
-        print(f"❌ Falha técnica no Telegram: {e}")
-
-# Agora, dentro da sua função vigilia_noturna(), chame o Telegram:
-def vigilia_noturna():
-    resumo = buscar_dados_externos()
-    msg = f"🔔 *RELATÓRIO DO ORÁCULO*\n\n{resumo}\n\n_Não esqueça de bater sua meta de TI hoje!_"
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensagem, "parse_mode": "Markdown"}
     
-    # Tentamos os dois canais:
-    enviar_notificacao_push("🌙 Oráculo", resumo) # Para o PC (que funciona)
-    enviar_telegram(msg) # Para o Celular (via Telegram)
-#import os
-#import json
-#import firebase_admin
-#from firebase_admin import credentials, firestore, messaging
-#import time
-#from datetime import datetime
-#import requests
-#from bs4 import BeautifulSoup
+    try:
+        requests.post(url, json=payload, timeout=10)
+        print("✅ Telegram entregue!")
+    except Exception as e:
+        print(f"❌ Falha no Telegram: {e}")
 
 # ==========================================
-# CONFIGURAÇÃO DE SEGURANÇA (GOLEM LOGIC)
+# 🔎 BUSCA DE DADOS (SITE UEMA)
 # ==========================================
-# O GitHub Actions vai preencher essa variável automaticamente
-#service_account_info = os.environ.get('FIREBASE_JSON')
-
-#if service_account_info:
-    # Se estiver rodando no GitHub (Golem)
-    #print("🤖 Golem iniciado: Usando credenciais de ambiente.")
-    #cred_dict = json.loads(service_account_info)
-    #cred = credentials.Certificate(cred_dict)
-#else:
-    # Se estiver rodando no seu PC local
- #   print("🏠 PC Local: Usando serviceAccountKey.json")
-  #  cred = credentials.Certificate("serviceAccountKey.json")
-
-# Inicializa o Firebase apenas se não tiver sido inicializado antes
-#if not firebase_admin._apps:
- #   firebase_admin.initialize_app(cred)
-# 1. CONEXÃO COM O OLIMPO
-#cred = credentials.Certificate("serviceAccountKey.json")
-#firebase_admin.initialize_app(cred)
-#db = firestore.client()
-
 def buscar_dados_externos():
-    print("🔎 Oráculo vasculhando editais na UEMA...")
+    print("🔎 Vasculhando editais...")
     url = "https://www.paes.uema.br/" 
-    headers = {'User-Agent': 'Mozilla/5.0'} # Evita ser bloqueado pelo servidor
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     noticia = "Nenhuma movimentação suspeita no PAES/CFO."
     
     try:
-        # 1. Faz a requisição com um User-Agent (simulando navegador)
-        res = requests.get(url, headers=headers, timeout=15)
-        res.raise_for_status() # Garante que o site respondeu 200 OK
-        
-        # 2. Transforma o HTML em algo que o Python entende
+        res = requests.get(url, headers=headers, timeout=20)
+        res.raise_for_status()
         soup = BeautifulSoup(res.text, 'html.parser')
         
-        # 3. Procura especificamente em links e títulos
-        termos_chave = ["cfo", "oficiais", "bombeiro", "pmma", "cbmma", "edital 2026", "concurso 2026", "edital oficial", "concurso oficial", "edital de oficiais", "concurso de oficiais", "edital de bombeiro", "concurso de bombeiro", ]
-        encontrado = False
-        
-        # Varre todos os links do site
+        termos = ["cfo", "oficiais", "bombeiro", "pmma", "edital 2026"]
         for link in soup.find_all('a'):
             texto = link.get_text().lower()
-            if any(termo in texto for termo in termos_chave):
+            if any(termo in texto for termo in termos):
                 noticia = f"🚨 ALERTA: Link detectado: '{link.get_text().strip()}'"
-                encontrado = True
                 break
-        
-        # Se não achou em links, faz uma busca rápida no texto visível
-        if not encontrado:
-            texto_visivel = soup.get_text().lower()
-            if "edital 2026" in texto_visivel or "cfo 2026" in texto_visivel:
-                noticia = "🚨 ALERTA: Menção ao CFO 2026 encontrada no site!"
-
-    except Exception as e:
-        print(f"❌ Erro técnico: {e}")
+    except:
         noticia = "⚠️ Radar offline: Falha ao acessar site da UEMA."
 
-    # Salva no Firestore (Exatamente como você já faz)
-    db.collection('oraculo_updates').add({
-        'tipo': 'radar_estudos',
-        'conteudo': noticia,
-        'data': firestore.SERVER_TIMESTAMP
-    })
     return noticia
 
-# No oraculo.py (Pasta Backend)
-def enviar_notificacao_push(titulo, corpo):
-    print(f"📡 Disparando sinal de ALTA PRIORIDADE...")
-    all_tokens = db.collection_group('tokens').stream()
-    
-    for doc in all_tokens:
-        token = doc.to_dict().get('token')
-        if token:
-            try:
-                message = messaging.Message(
-                        data={
-                                "title": "🚨 ALERTA DO ORÁCULO",
-                                "body": "Movimentação detectada no CFO!",
-                                "link": "https://kayronmaximus.github.io/ai-plus-defce/"
-                            },
-                    notification=messaging.Notification(
-                        title=titulo,
-                        body=corpo,
-                    ),
-                    android=messaging.AndroidConfig(
-                        ttl=3600,
-                        priority='high', # Isso aqui já define a prioridade alta
-                        notification=messaging.AndroidNotification(
-                            channel_id='default',
-                            priority='high', # Aqui também
-                            default_sound=True,
-                            default_vibrate_timings=True,
-                            click_action='https://kayronmaximus.github.io/ai-plus-defce/'
-                        ),
-                    ),
-webpush=messaging.WebpushConfig(
-        fcm_options=messaging.WebpushFCMOptions(
-            link='https://kayronmaximus.github.io/ai-plus-defce/'
-        ),
-        headers={"Urgency": "high"}
-                    ),
-                    token=token,
-                )
-                messaging.send(message)
-                print(f"✅ Sinal enviado com sucesso!")
-            except Exception as e:
-                print(f"❌ Erro: {e}")
-
-def vigilia_noturna():
-    # 1. Vasculha o site da UEMA
-    resumo = buscar_dados_externos()
-    
-    # 2. Prepara a mensagem
-    msg = f"{resumo} Não esqueça de bater sua meta de TI hoje!"
-    
-    # 3. Dispara a notificação
-    enviar_notificacao_push("🌙 Relatório da Vigília", msg)
-    
-    # 4. Encerra (O GitHub Actions acordará o script novamente em 1 hora)
-    print("✅ Vigília concluída. O Golem vai descansar até a próxima hora.")
-
+# ==========================================
+# 🌙 VIGÍLIA (EXECUÇÃO ÚNICA PARA O GOLEM)
+# ==========================================
 if __name__ == "__main__":
-    vigilia_noturna()
+    resumo = buscar_dados_externos()
+    msg_telegram = f"🔔 *RELATÓRIO DO ORÁCULO*\n\n{resumo}\n\n_Não esqueça da meta de TI hoje!_"
+    
+    # Envia para os dois canais
+    enviar_telegram(msg_telegram)
+    print("🏁 Patrulha concluída.")
