@@ -1,0 +1,25 @@
+name: Golem de Vigilia
+on:
+  schedule:
+    - cron: '0 * * * *' # Roda a cada 60 minutos
+  workflow_dispatch: # Permite que você aperte um botão para testar agora
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixando código
+        uses: actions/checkout@v3
+
+      - name: Instalando Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalando Bibliotecas
+        run: pip install firebase-admin beautifulsoup4 requests
+
+      - name: Executando Oraculo
+        env:
+          FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
+        run: python oraculo.py
