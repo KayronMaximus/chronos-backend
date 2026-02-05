@@ -22,4 +22,6 @@ jobs:
       - name: Executando Oraculo
         env:
           FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python oraculo.py
