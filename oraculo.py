@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 # 🛡️ SEGURANÇA E CREDENCIAIS
 # ==========================================
 service_account_info = os.environ.get('FIREBASE_JSON')
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
+TELEGRAM_TOKEN = os.environ.get('8496652168:AAEjYrA9c2-K6CsxAbcWoWrBF6rH2tU7f6o')
+TELEGRAM_CHAT_ID = os.environ.get('8217910497')
 
 if service_account_info:
     print("🤖 Golem iniciado: Usando credenciais de ambiente.")
