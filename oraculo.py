@@ -143,21 +143,17 @@ webpush=messaging.WebpushConfig(
                 print(f"❌ Erro: {e}")
 
 def vigilia_noturna():
-    # TESTE INICIAL: Assim que rodar, ele avisa no celular
-    enviar_notificacao_push("👁️ Oráculo Ativo", "Sistema de vigília iniciado com sucesso.")
+    # 1. Vasculha o site da UEMA
+    resumo = buscar_dados_externos()
     
-    print("👁️ O Oráculo está observando os editais...")
-    while True:
-        agora = datetime.now()
-        
-        # VERIFICAÇÃO DAS 22:30
-        if True:
-            resumo = buscar_dados_externos()
-            msg = f"{resumo} Não esqueça de bater sua meta de TI hoje!"
-            enviar_notificacao_push("🌙 Relatório da Vigília", msg)
-            time.sleep(61)
-            
-        time.sleep(30)
+    # 2. Prepara a mensagem
+    msg = f"{resumo} Não esqueça de bater sua meta de TI hoje!"
+    
+    # 3. Dispara a notificação
+    enviar_notificacao_push("🌙 Relatório da Vigília", msg)
+    
+    # 4. Encerra (O GitHub Actions acordará o script novamente em 1 hora)
+    print("✅ Vigília concluída. O Golem vai descansar até a próxima hora.")
 
 if __name__ == "__main__":
     vigilia_noturna()
