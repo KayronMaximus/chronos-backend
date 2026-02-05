@@ -1,23 +1,26 @@
 name: Golem de Vigilia
+
 on:
   schedule:
-    - cron: '0 * * * *' # Roda a cada 60 minutos
-  workflow_dispatch: # Permite que você aperte um botão para testar agora
+    - cron: '0 * * * *' # Roda de hora em hora
+  workflow_dispatch: # Permite rodar manualmente no botão
 
 jobs:
-  build:
+  vigilia:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Baixando código
+      - name: Baixando o código
         uses: actions/checkout@v3
 
-      - name: Instalando Python
+      - name: Configurando Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11' # <--- MUDEI PARA 3.11 (Adeus avisos chatos!)
 
       - name: Instalando Bibliotecas
-        run: pip install firebase-admin beautifulsoup4 requests
+        # AQUI ESTÁ A CORREÇÃO PRINCIPAL 👇
+        run: pip install firebase-admin beautifulsoup4 requests google-generativeai
 
       - name: Executando Oraculo
         env:
