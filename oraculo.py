@@ -76,4 +76,3 @@ if __name__ == "__main__":
     
     # Envia para os dois canais
     enviar_telegram(msg_telegram)
-    print("🏁 Patrulha concluída.")
