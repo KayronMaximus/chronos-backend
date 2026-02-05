@@ -2,34 +2,58 @@ import os
 import json
 import firebase_admin
 from firebase_admin import credentials, firestore, messaging
-import time
-from datetime import datetime
-import requests
-from bs4 import BeautifulSoup
+
+# 1. Tenta pegar a chave do cofre do GitHub
+service_account_info = os.environ.get('FIREBASE_JSON')
+
+if service_account_info:
+    # Se encontrou a variável (Está no GitHub)
+    print("🤖 Golem iniciado: Usando credenciais de ambiente.")
+    cred_dict = json.loads(service_account_info)
+    cred = credentials.Certificate(cred_dict)
+else:
+    # Se NÃO encontrou (Está no seu PC)
+    print("🏠 PC Local: Usando arquivo serviceAccountKey.json")
+    # Certifique-se de que o nome do arquivo abaixo está correto no seu PC
+    cred = credentials.Certificate("serviceAccountKey.json")
+
+# 2. Inicializa o App
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+#import os
+#import json
+#import firebase_admin
+#from firebase_admin import credentials, firestore, messaging
+#import time
+#from datetime import datetime
+#import requests
+#from bs4 import BeautifulSoup
 
 # ==========================================
 # CONFIGURAÇÃO DE SEGURANÇA (GOLEM LOGIC)
 # ==========================================
 # O GitHub Actions vai preencher essa variável automaticamente
-service_account_info = os.environ.get('FIREBASE_JSON')
+#service_account_info = os.environ.get('FIREBASE_JSON')
 
-if service_account_info:
+#if service_account_info:
     # Se estiver rodando no GitHub (Golem)
-    print("🤖 Golem iniciado: Usando credenciais de ambiente.")
-    cred_dict = json.loads(service_account_info)
-    cred = credentials.Certificate(cred_dict)
-else:
+    #print("🤖 Golem iniciado: Usando credenciais de ambiente.")
+    #cred_dict = json.loads(service_account_info)
+    #cred = credentials.Certificate(cred_dict)
+#else:
     # Se estiver rodando no seu PC local
-    print("🏠 PC Local: Usando serviceAccountKey.json")
-    cred = credentials.Certificate("serviceAccountKey.json")
+ #   print("🏠 PC Local: Usando serviceAccountKey.json")
+  #  cred = credentials.Certificate("serviceAccountKey.json")
 
 # Inicializa o Firebase apenas se não tiver sido inicializado antes
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
+#if not firebase_admin._apps:
+ #   firebase_admin.initialize_app(cred)
 # 1. CONEXÃO COM O OLIMPO
-cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+#cred = credentials.Certificate("serviceAccountKey.json")
+#firebase_admin.initialize_app(cred)
+#db = firestore.client()
 
 def buscar_dados_externos():
     print("🔎 Oráculo vasculhando editais na UEMA...")
