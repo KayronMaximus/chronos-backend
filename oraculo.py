@@ -192,9 +192,6 @@ if __name__ == "__main__":
         print("🚀 Enviando relatório inteligente...")
         enviar_telegram(relatorio)
     else:
-        msg_teste = "🔊 <b>TESTE DE SOM 1, 2, 3...</b>\n\nChronos, se você está lendo isso, o Golem achou o caminho do Grupo! 🛡️❤️\n\n(Nenhuma novidade real, apenas testando a conexão)"
-        enviar_telegram(msg_teste)
-        print("🔊 Mensagem de teste enviada!")
-        #print("🤫 Nada relevante encontrado pela IA.")
+        print("🤫 Nada relevante encontrado pela IA.")
     
     print("🏁 Fim da execução.")
