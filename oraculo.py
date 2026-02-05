@@ -1,72 +1,73 @@
 import os
 import json
-import firebase_admin
-from firebase_admin import credentials, firestore, messaging
 import requests
 from bs4 import BeautifulSoup
 
-# ==========================================
-# 🛡️ CONFIGURAÇÃO DE SEGURANÇA
-# ==========================================
-service_account_info = os.environ.get('FIREBASE_JSON')
+# Configurações do Telegram
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
 
-if service_account_info:
-    cred_dict = json.loads(service_account_info)
-    cred = credentials.Certificate(cred_dict)
-else:
-    # Caso rode localmente, ele tenta o arquivo
-    cred = credentials.Certificate("serviceAccountKey.json")
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-db = firestore.client()
-
-# ==========================================
-# 🛰️ COMUNICAÇÃO (TELEGRAM)
-# ==========================================
 def enviar_telegram(mensagem):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        print("⚠️ Telegram não configurado nos Secrets.")
-        return
-    
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID: return
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensagem, "parse_mode": "Markdown"}
-    
-    try:
-        r = requests.post(url, json=payload, timeout=10)
-        print(f"✅ Resposta Telegram: {r.status_code}")
-    except Exception as e:
-        print(f"❌ Erro no envio: {e}")
+    requests.post(url, json=payload, timeout=10)
 
-# ==========================================
-# 🔎 RADAR DE EDITAIS
-# ==========================================
-def buscar_dados_externos():
-    url = "https://www.paes.uema.br/" 
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    noticia = "Nenhuma movimentação suspeita no PAES/CFO."
-    
+def vasculhar_site(url, termos):
+    """Função genérica para procurar termos em links de um site"""
     try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
         res = requests.get(url, headers=headers, timeout=20)
         soup = BeautifulSoup(res.text, 'html.parser')
-        termos = ["cfo", "oficiais", "bombeiro", "pmma", "edital 2026"]
+        achados = []
         for link in soup.find_all('a'):
             texto = link.get_text().lower()
             if any(termo in texto for termo in termos):
-                noticia = f"🚨 ALERTA: Link detectado: '{link.get_text().strip()}'"
-                break
+                achados.append(f"🔗 [{link.get_text().strip()}]({link.get('href')})")
+        return list(set(achados[:3])) # Retorna até 3 links únicos
     except:
-        noticia = "⚠️ Radar offline: Falha ao acessar site da UEMA."
-    return noticia
+        return []
 
-# ==========================================
-# 🌙 VIGÍLIA
-# ==========================================
 if __name__ == "__main__":
-    print("🤖 Golem em patrulha...")
-    resumo = buscar_dados_externos()
-    msg = f"🔔 *RELATÓRIO DO ORÁCULO*\n\n{resumo}\n\n_Meta de TI batida?_"
-    enviar_telegram(msg)
-    print("🏁 Patrulha concluída.")
+    print("🤖 Golem iniciando patrulha expandida...")
+    
+    # 🎯 CONFIGURAÇÃO DE BUSCA - CHRONOS (MILITAR)
+    sites_militar = [
+        ("UEMA PAES", "https://www.paes.uema.br/", ["cfo", "pmma", "bombeiro", "oficiais"]),
+        ("PCI Nordeste", "https://www.pciconcursos.com.br/concursos/nordeste/ma", ["pm", "militar", "segurança"])
+    ]
+    
+    # 🎯 CONFIGURAÇÃO DE BUSCA - NAMORADA (PEDAGOGIA)
+    sites_pedagogia = [
+        ("PCI Maranhão", "https://www.pciconcursos.com.br/concursos/nordeste/ma", ["pedagogia", "professor", "educação", "semed"]),
+        ("Diário Oficial MA", "https://www.diariooficial.ma.gov.br/", ["seletivo", "educação"])
+    ]
+
+    relatorio = "🔔 *RELATÓRIO DO ORÁCULO*\n\n"
+    
+    # Busca Militar
+    relatorio += "⚔️ *Vigilância Chronos (CFO/Militar):*\n"
+    encontrou_militar = False
+    for nome, url, termos in sites_militar:
+        links = vasculhar_site(url, termos)
+        if links:
+            relatorio += f"📍 {nome}:\n" + "\n".join(links) + "\n"
+            encontrou_militar = True
+    if not encontrou_militar: relatorio += "✅ Nada de novo na frente de batalha.\n"
+
+    relatorio += "\n" + "—" * 15 + "\n\n"
+
+    # Busca Pedagogia
+    relatorio += "🎓 *Vigilância Yasmin (Pedagogia):*\n"
+    encontrou_pedag = False
+    for nome, url, termos in sites_pedagogia:
+        links = vasculhar_site(url, termos)
+        if links:
+            relatorio += f"📍 {nome}:\n" + "\n".join(links) + "\n"
+            encontrou_pedag = True
+    if not encontrou_pedag: relatorio += "✅ Nenhuma vaga nova para Pedagogia.\n"
+
+    relatorio += "\n_Golem de Vigília v2.0_"
+    
+    enviar_telegram(relatorio)
+    print("🏁 Patrulha concluída com sucesso!")
