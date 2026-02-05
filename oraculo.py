@@ -22,6 +22,35 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+# Adicione isso no topo do oraculo.py
+TELEGRAM_TOKEN = "8496652168:AAEjYrA9c2-K6CsxABcWoWrBF6rH2tU7f6o"
+TELEGRAM_CHAT_ID = "8217910497"
+
+def enviar_telegram(mensagem):
+    print("🚀 Enviando sinal via Telegram...")
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": mensagem,
+        "parse_mode": "Markdown"
+    }
+    try:
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            print("✅ Telegram entregue!")
+        else:
+            print(f"❌ Erro Telegram: {response.text}")
+    except Exception as e:
+        print(f"❌ Falha técnica no Telegram: {e}")
+
+# Agora, dentro da sua função vigilia_noturna(), chame o Telegram:
+def vigilia_noturna():
+    resumo = buscar_dados_externos()
+    msg = f"🔔 *RELATÓRIO DO ORÁCULO*\n\n{resumo}\n\n_Não esqueça de bater sua meta de TI hoje!_"
+    
+    # Tentamos os dois canais:
+    enviar_notificacao_push("🌙 Oráculo", resumo) # Para o PC (que funciona)
+    enviar_telegram(msg) # Para o Celular (via Telegram)
 #import os
 #import json
 #import firebase_admin
