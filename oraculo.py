@@ -30,7 +30,9 @@ def vasculhar_site(url_base, termos):
                 texto_lower = texto.lower()
                 if any(termo in texto_lower for termo in termos):
                     # A MÁGICA ACONTECE AQUI:
+                    # Se o link for "/edital.pdf", ele vira "https://site.com/edital.pdf"
                     link_completo = urljoin(url_base, href)
+                    
                     # Formatação em HTML: <a href="LINK">TITULO</a>
                     achados.append(f"🔗 <a href='{link_completo}'>{texto}</a>")
                     
@@ -91,6 +93,6 @@ if __name__ == "__main__":
 
     relatorio += "\n<i>Golem de Vigília v2.1</i>"
     
-    # Envia a mensagem
+    # Envia a mensagem apenas se houver novidades (ou sempre, como preferires)
     enviar_telegram(relatorio)
     print("🏁 Patrulha concluída.")
